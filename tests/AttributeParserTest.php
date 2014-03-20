@@ -58,13 +58,32 @@ EXPECTED;
 
         $this->parser->setSource($content);
 
-        $this->parser->pushHandler(function ($attr, $params, $nodeValue) {
+        $this->parser->pushHandler(function ($attr, $identifier, $params, $nodeValue) {
             return 'Bla';
         });
 
         $parsedContent = $this->parser->parse();
 
         $this->assertEquals($expected, $parsedContent);
+    }
+
+    public function testDetectsIdentifier()
+    {
+        $content = <<<CONTENT
+<!DOCTYPE html>
+<html lang="en"><body>
+    <div hcms-text="id">Prev content</div>
+</body></html>
+
+CONTENT;
+
+        $this->parser->setSource($content);
+
+        $this->parser->pushHandler(function ($attr, $identifier, $params, $nodeValue) {
+            $this->assertEquals($identifier, 'id');
+        });
+
+        $parsedContent = $this->parser->parse();
     }
 
     public function testInjectingOfHTMLWorks()
@@ -88,7 +107,7 @@ EXPECTED;
 
         $this->parser->setSource($content);
 
-        $this->parser->pushHandler(function ($attr, $params, $nodeValue) {
+        $this->parser->pushHandler(function ($attr, $identifier, $params, $nodeValue) {
             if ($attr == "text") {
                 return '<h1>Bla</h1>';
             } else {
@@ -114,7 +133,7 @@ CONTENT;
         $this->parser->setSource($content);
 
         $that = $this;
-        $handler = function ($attr, $params, $nodeValue) use ($that) {
+        $handler = function ($attr, $identifier, $params, $nodeValue) use ($that) {
             $that->fail('Handler was still called!');
         };
 

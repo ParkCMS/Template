@@ -146,6 +146,7 @@ class AttributeParser
     {
         $prefixLength = $this->_prefixLength;
         $attr = false;
+        $identifier = null;
         $params = array();
 
         $attrsToRemove = array();
@@ -157,6 +158,7 @@ class AttributeParser
                 $nodeName = $this->subtractPrefix($attribute->nodeName);
                 if (!$attr) {
                     $attr = $nodeName;
+                    $identifier = $attribute->nodeValue;
                 } else {
                     $components = explode("-", $nodeName);
                     if ($components[0] === $attr) {
@@ -178,7 +180,7 @@ class AttributeParser
 
         if ($attr) {
             $docfrag = $this->_tree->createDocumentFragment();
-            $result = $this->runHandler($attr, $params, $node->nodeValue);
+            $result = $this->runHandler($attr, $identifier, $params, $node->nodeValue);
             $node->nodeValue = "";
             $docfrag->appendXML($result);
             if ($docfrag->hasChildNodes()) {
@@ -199,12 +201,12 @@ class AttributeParser
      * @param  string $content The previous content of the block node
      * @return string          The new block node content
      */
-    private function runHandler($type, $params, $content)
+    private function runHandler($type, $identifier, $params, $content)
     {
         $res = $content;
 
         foreach ($this->_handlers as $handler) {
-            $handlerResult = $handler($type, $params, $res);
+            $handlerResult = $handler($type, $identifier, $params, $res);
             if ($handlerResult !== null) {
                 $res = $handlerResult;
             }
