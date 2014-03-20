@@ -1,6 +1,6 @@
 {
     "name": "parkcms/template",
-    "description": "",
+    "description": "Template parser, which is using a declarative syntax",
     "authors": [
         {
             "name": "ParkCMS Team",
