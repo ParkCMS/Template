@@ -1,0 +1,20 @@
+{
+    "name": "parkcms/template",
+    "description": "",
+    "authors": [
+        {
+            "name": "ParkCMS Team",
+            "email": "parkcms.team@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.3.0",
+        "illuminate/support": "4.1.*"
+    },
+    "autoload": {
+        "psr-0": {
+            "Parkcms\\Template": "src/"
+        }
+    },
+    "minimum-stability": "stable"
+}
