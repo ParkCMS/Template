@@ -161,8 +161,7 @@ class AttributeParser
                     $identifier = $attribute->nodeValue;
                 } else {
                     $components = explode("-", $nodeName);
-                    if ($components[0] === $attr) {
-                        unset($components[0]);
+                    if (array_shift($components) === $attr) {
                         $index = implode("-", $components);
                         $params[$index] = $this->parseArgumentValue($attribute->nodeValue);
                     }
