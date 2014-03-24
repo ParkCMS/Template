@@ -79,8 +79,10 @@ CONTENT;
 
         $this->parser->setSource($content);
 
-        $this->parser->pushHandler(function ($attr, $identifier, $params, $nodeValue) {
-            $this->assertEquals($identifier, 'id');
+        $that = $this;
+
+        $this->parser->pushHandler(function ($attr, $identifier, $params, $nodeValue) use ($that) {
+            $that->assertEquals($identifier, 'id');
         });
 
         $parsedContent = $this->parser->parse();
