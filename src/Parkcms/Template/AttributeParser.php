@@ -179,11 +179,14 @@ class AttributeParser
 
         if ($attr) {
             $docfrag = $this->_tree->createDocumentFragment();
-            $result = $this->runHandler($attr, $identifier, $params, $node->nodeValue);
-            $node->nodeValue = "";
-            $docfrag->appendXML($result);
-            if ($docfrag->hasChildNodes()) {
-                $node->appendChild($docfrag);
+            $currentContent = $this->_tree->saveHTML($node);
+            $result = $this->runHandler($attr, $identifier, $params, $currentContent);
+            if ($result !== null) {
+                $node->nodeValue = "";
+                $docfrag->appendXML($result);
+                if ($docfrag->hasChildNodes()) {
+                    $node->appendChild($docfrag);
+                }
             }
         }
     }
@@ -202,11 +205,13 @@ class AttributeParser
      */
     private function runHandler($type, $identifier, $params, $content)
     {
-        $res = $content;
+        //$res = $content;
+        $res = null;
 
         foreach ($this->_handlers as $handler) {
-            $handlerResult = $handler($type, $identifier, $params, $res);
+            $handlerResult = $handler($type, $identifier, $params, $content);
             if ($handlerResult !== null) {
+                $content = $handlerResult;
                 $res = $handlerResult;
             }
         }

@@ -122,6 +122,26 @@ EXPECTED;
         $this->assertEquals($expected, $parsedContent);
     }
 
+    public function testHTMLLivesOnOnNull()
+    {
+        $content = <<<CONTENT
+<!DOCTYPE html>
+<html lang="en"><body>
+    <div hcms-text="id">Prev content<br></div>
+    <div hcms-blog="block2"><h1>Marked up content</h1></div>
+</body></html>
+
+CONTENT;
+        
+        $this->parser->setSource($content);
+        $this->parser->setRemoveAttributes(false);
+        $this->parser->pushHandler(function ($attr, $identifier, $params, $nodeValue) {
+            return null;
+        });
+
+        $this->assertEquals($content, $this->parser->parse());
+    }
+
     public function testRemoveHandler()
     {
         $content = <<<CONTENT
