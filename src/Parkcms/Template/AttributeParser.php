@@ -2,6 +2,8 @@
 
 namespace Parkcms\Template;
 
+use Illuminate\Events\Dispatcher as Event;
+
 class AttributeParser
 {
     protected $_prefix = 'hcms-';
@@ -19,10 +21,12 @@ class AttributeParser
     protected $_removeAttributes = true;
 
     protected $_converter = null;
+    protected $_event = null;
 
-    public function __construct(ArgumentConverter $converter)
+    public function __construct(ArgumentConverter $converter, Event $event)
     {
         $this->_converter = $converter;
+        $this->_event = $event;
     }
 
     /**
@@ -119,6 +123,9 @@ class AttributeParser
         foreach ($result as $i => $node) {
             $this->parseNode($node);
         }
+
+        // Fire post parsing event
+        $this->_event->fire('parkcms.parser.post', array(&$this->_tree));
 
         return $this->_tree->saveHTML();
     }

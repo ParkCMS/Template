@@ -2,6 +2,7 @@
 
 use Parkcms\Template\AttributeParser as Parser;
 use Parkcms\Template\ArgumentConverter;
+use Illuminate\Events\Dispatcher as Event;
 
 class AttributeParserTest extends PHPUnit_Framework_TestCase
 {
@@ -10,7 +11,7 @@ class AttributeParserTest extends PHPUnit_Framework_TestCase
     public function setUp()
     {
         $this->converter = new ArgumentConverter;
-        $this->parser = new Parser($this->converter);
+        $this->parser = new Parser($this->converter, new Event);
     }
 
     public function testRemovesAttributes()
