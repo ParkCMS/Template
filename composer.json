@@ -17,6 +17,5 @@
         "psr-0": {
             "Parkcms\\Template": "src/"
         }
-    },
-    "minimum-stability": "stable"
+    }
 }
