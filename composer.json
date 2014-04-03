@@ -1,6 +1,5 @@
 {
     "name": "parkcms/template",
-    "version": "2.0",
     "description": "Template parser, which is using a declarative syntax",
     "authors": [
         {
@@ -12,7 +11,7 @@
         "php": ">=5.3.0",
         "illuminate/support": "4.1.*",
         "illuminate/events": "4.1.*",
-        "niels/ganon": "dev-master@dev"
+        "niels/ganon": "dev-master"
     },
     "autoload": {
         "psr-0": {
