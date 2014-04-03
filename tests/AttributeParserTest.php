@@ -7,11 +7,13 @@ use Illuminate\Events\Dispatcher as Event;
 class AttributeParserTest extends PHPUnit_Framework_TestCase
 {
     private $converter;
+    private $event;
 
     public function setUp()
     {
+        $this->event = new Event;
         $this->converter = new ArgumentConverter;
-        $this->parser = new Parser($this->converter, new Event);
+        $this->parser = new Parser($this->converter, $this->event);
     }
 
     public function testRemovesAttributes()
@@ -19,15 +21,15 @@ class AttributeParserTest extends PHPUnit_Framework_TestCase
         $content = <<<CONTENT
 <!DOCTYPE html>
 <html lang="en"><body>
-    <div hcms-text="id"></div>
-    <div hcms-blog="bbb" hcms-blog-limit="a"></div>
+    <div hcms-program="text" hcms-text="id"><h1>Ganon</h1></div>
+    <div hcms-program="blog" hcms-blog="bbb" hcms-blog-limit="a"></div>
 </body></html>
 
 CONTENT;
         $expected = <<<EXPECTED
 <!DOCTYPE html>
 <html lang="en"><body>
-    <div></div>
+    <div><h1>Ganon</h1></div>
     <div></div>
 </body></html>
 
@@ -45,7 +47,7 @@ EXPECTED;
         $content = <<<CONTENT
 <!DOCTYPE html>
 <html lang="en"><body>
-    <div hcms-text="id">Prev content</div>
+    <div hcms-program="text" hcms-text="id">Prev content</div>
 </body></html>
 
 CONTENT;
@@ -73,7 +75,7 @@ EXPECTED;
         $content = <<<CONTENT
 <!DOCTYPE html>
 <html lang="en"><body>
-    <div hcms-text="id">Prev content</div>
+    <div hcms-program="text" hcms-text="id">Prev content</div>
 </body></html>
 
 CONTENT;
@@ -94,8 +96,8 @@ CONTENT;
         $content = <<<CONTENT
 <!DOCTYPE html>
 <html lang="en"><body>
-    <div hcms-text="id">Prev content<br></div>
-    <div hcms-blog="block2"><h1>Marked up content</h1></div>
+    <div hcms-program="text" hcms-text="id">Prev content<br></div>
+    <div hcms-program="blog" hcms-blog="block2"><h1>Marked up content</h1></div>
 </body></html>
 
 CONTENT;
@@ -128,8 +130,8 @@ EXPECTED;
         $content = <<<CONTENT
 <!DOCTYPE html>
 <html lang="en"><body>
-    <div hcms-text="id">Prev content<br></div>
-    <div hcms-blog="block2"><h1>Marked up content</h1></div>
+    <div hcms-program="text" hcms-text="id">Prev content<br />ä ö ü ß &</div>
+    <div hcms-program="blog" hcms-blog="block2"><h1>Marked up content</h1></div>
 </body></html>
 
 CONTENT;
@@ -148,7 +150,7 @@ CONTENT;
         $content = <<<CONTENT
 <!DOCTYPE html>
 <html lang="en"><body>
-    <div hcms-text="id"></div>
+    <div hcms-program="text" hcms-text="id"></div>
 </body></html>
 
 CONTENT;
@@ -164,5 +166,45 @@ CONTENT;
         $this->parser->removeHandler($handler);
 
         $this->parser->parse();
+    }
+
+    public function testPostParseEvent()
+    {
+        $content = <<<CONTENT
+<!DOCTYPE html>
+<html lang="en"><body>
+    <div hcms-program="text" hcms-text="id">Prev content<br />ä ö ü ß &</div>
+    <div hcms-program="blog" hcms-blog="block2"><h1>Marked up content</h1></div>
+    <hcms-scripts />
+</body></html>
+
+CONTENT;
+
+        $expected = <<<CONTENT
+<!DOCTYPE html>
+<html lang="en"><body>
+    <div><h1>Bla äöü</h1></div>
+    <div>Bla</div>
+    <div class="scripts"></div>
+</body></html>
+
+CONTENT;
+
+        $this->event->listen('parkcms.parser.post', function($data) {
+            $node = $data('hcms-scripts');
+            $node[0]->setOuterText('<div class="scripts"></div>');
+        });
+
+        $this->parser->pushHandler(function ($attr, $identifier, $params, $nodeValue) {
+            if ($attr == "text") {
+                return '<h1>Bla äöü</h1>';
+            } else {
+                return 'Bla';
+            }
+        });
+
+        $this->parser->setSource($content);
+
+        $this->assertEquals($expected, $this->parser->parse());
     }
 }

@@ -3,6 +3,7 @@
 namespace Parkcms\Template;
 
 use Illuminate\Events\Dispatcher as Event;
+use HTML_Parser_HTML5;
 
 class AttributeParser
 {
@@ -35,14 +36,6 @@ class AttributeParser
      */
     public function setSource($source)
     {
-        if (function_exists('mb_convert_encoding') 
-            && in_array(
-                strtolower($this->_charset),
-                array_map('strtolower', mb_list_encodings())
-                )
-            ) {
-            $source = mb_convert_encoding($source, 'HTML-ENTITIES', $this->_charset);
-        }
         $this->_source = $source;
     }
 
@@ -111,23 +104,21 @@ class AttributeParser
         if ($this->_source === null) {
             throw new \BadMethodCallException('Missing source!');
         }
-        $this->initializeDOM();
 
-        $domxpath = new \DOMXPath($this->_tree);
+        $mainAttrib = $this->_prefix . 'program';
 
-        $selector = '//*[@*[starts-with(name(), "' . $this->_prefix . '")]]';
+        $this->_tree = $html = new HTML_Parser_HTML5($this->_source);
 
-        $result = $domxpath->query($selector);
+        $programs = $html('['.$mainAttrib.']');
 
-        // Look at each node in tree that has at least one attribute with prefix
-        foreach ($result as $i => $node) {
-            $this->parseNode($node);
+        foreach ($programs as $program) {
+            $this->parseNode($program);
         }
 
         // Fire post parsing event
         $this->_event->fire('parkcms.parser.post', array(&$this->_tree));
 
-        return $this->_tree->saveHTML();
+        return $this->_tree->__toString();
     }
 
     public function parseArgumentValue($arg)
@@ -135,65 +126,46 @@ class AttributeParser
         return $this->_converter->convert($arg);
     }
 
-    private function initializeDOM()
-    {
-        $current = libxml_use_internal_errors(true);
-        $disableEntities = libxml_disable_entity_loader(true);
-
-        $this->_tree = new \DOMDocument('1.0', $this->_charset);
-        $this->_tree->validateOnParse = true;
-
-        @$this->_tree->loadHTML($this->_source);
-
-        libxml_use_internal_errors($current);
-        libxml_disable_entity_loader($disableEntities);
-    }
-
-    private function parseNode(&$node)
+    private function parseNode(\HTML_Node &$node)
     {
         $prefixLength = $this->_prefixLength;
-        $attr = false;
-        $identifier = null;
+        $attr = $node->attributes[$this->_prefix . 'program'];
+        $identifier = $node->attributes[$this->_prefix . $attr];
         $params = array();
 
         $attrsToRemove = array();
 
         // Query through attributes and parse them
-        foreach($node->attributes as $attribute) {
+        foreach($node->attributes as $attributeName => $attribute) {
+
             // is prefix attribute or HTML-Attribute?
-            if (strpos($attribute->nodeName, $this->_prefix) === 0) {
-                $nodeName = $this->subtractPrefix($attribute->nodeName);
-                if (!$attr) {
-                    $attr = $nodeName;
-                    $identifier = $attribute->nodeValue;
-                } else {
-                    $components = explode("-", $nodeName);
-                    if (array_shift($components) === $attr) {
-                        $index = implode("-", $components);
-                        $params[$index] = $this->parseArgumentValue($attribute->nodeValue);
-                    }
+            if (strpos($attributeName, $this->_prefix) === 0) {
+                if ($attributeName === $this->_prefix . 'program' || $attributeName === $this->_prefix . $attr) {
+                    $attrsToRemove[] = $attributeName;
+                    continue;
+                }
+                $nodeName = $this->subtractPrefix($attributeName);
+                $components = explode("-", $nodeName);
+                if (array_shift($components) === $attr) {
+                    $index = implode("-", $components);
+                    $params[$index] = $this->parseArgumentValue($attribute);
                 }
                 // This attribute should be removed
-                $attrsToRemove[] = $attribute->nodeName;
+                $attrsToRemove[] = $attributeName;
             }
         }
         // Remove marked attributes
         if ($this->_removeAttributes) {
             foreach ($attrsToRemove as $rem) {
-                $node->removeAttribute($rem);
+                $node->deleteAttribute($rem);
             }
         }
 
-        if ($attr) {
-            $docfrag = $this->_tree->createDocumentFragment();
-            $currentContent = $this->_tree->saveHTML($node);
+        if ($attr && $identifier) {
+            $currentContent = $node->getInnerText();
             $result = $this->runHandler($attr, $identifier, $params, $currentContent);
             if ($result !== null) {
-                $node->nodeValue = "";
-                $docfrag->appendXML($result);
-                if ($docfrag->hasChildNodes()) {
-                    $node->appendChild($docfrag);
-                }
+                $node->setInnerText($result);
             }
         }
     }

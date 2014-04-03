@@ -1,5 +1,6 @@
 <?php namespace Parkcms\Template;
 
+use Blade;
 use Illuminate\Support\ServiceProvider;
 
 class TemplateServiceProvider extends ServiceProvider {
@@ -18,7 +19,9 @@ class TemplateServiceProvider extends ServiceProvider {
 	 */
 	public function register()
 	{
-		//
+		$this->app->bind('parkcms.parser', function($app) {
+			return $app->make('Parkcms\Template\AttributeParser');
+		});
 	}
 
 	/**
